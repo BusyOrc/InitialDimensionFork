@@ -1,7 +1,7 @@
 package com.pancake.initial_dimension;
 
 import com.mojang.logging.LogUtils;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
@@ -41,7 +41,7 @@ public class InitialDimension {
         }
 
         public static ResourceKey<Level> getDimension() {
-            return ResourceKey.create(Registries.DIMENSION, ResourceLocation.tryParse(INITIAL_DIMENSION.get()));
+            return ResourceKey.create(Registry.DIMENSION_REGISTRY, ResourceLocation.tryParse(INITIAL_DIMENSION.get()));
         }
     }
 }
