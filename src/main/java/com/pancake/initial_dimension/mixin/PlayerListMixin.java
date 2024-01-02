@@ -2,12 +2,9 @@ package com.pancake.initial_dimension.mixin;
 
 import com.mojang.serialization.Dynamic;
 import com.pancake.initial_dimension.InitialDimension;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -23,7 +20,9 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(PlayerList.class)
 public abstract class PlayerListMixin {
-    @Shadow @Final private MinecraftServer server;
+    @Shadow
+    @Final
+    private MinecraftServer server;
 
     @Redirect(method = "placeNewPlayer", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/server/players/PlayerList;load(Lnet/minecraft/server/level/ServerPlayer;)Lnet/minecraft/nbt/CompoundTag;"))
@@ -37,8 +36,8 @@ public abstract class PlayerListMixin {
                         .resultOrPartial(InitialDimension.LOGGER::error)
                         .orElse(Level.OVERWORLD)
                 : levelResourceKey;
-        if(resourcekey == levelResourceKey) {
-            if(compoundtag == null)
+        if (resourcekey == levelResourceKey) {
+            if (compoundtag == null)
                 compoundtag = new CompoundTag();
             compoundtag.putString("Dimension", levelResourceKey.location().toString());
             return compoundtag;
@@ -49,9 +48,16 @@ public abstract class PlayerListMixin {
 
     @Redirect(method = "respawn", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/server/MinecraftServer;overworld()Lnet/minecraft/server/level/ServerLevel;"), require = 0)
-    private ServerLevel changeRespawnOverworld(MinecraftServer minecraftServer) {
+    private ServerLevel changeOverworld(MinecraftServer minecraftServer) {
         ResourceKey<Level> dimension = InitialDimension.Config.getDimension();
         return minecraftServer.getLevel(dimension);
+    }
+
+
+    @ModifyVariable(method = "respawn", at = @At("STORE"), ordinal = 0)
+    private ServerLevel modifyServerLevel(ServerLevel serverlevel) {
+        ResourceKey<Level> dimension = InitialDimension.Config.getDimension();
+        return server.getLevel(dimension);
     }
 
     @Redirect(method = "getPlayerForLogin", at = @At(value = "INVOKE",

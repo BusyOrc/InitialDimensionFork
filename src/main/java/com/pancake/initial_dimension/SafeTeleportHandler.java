@@ -2,6 +2,7 @@ package com.pancake.initial_dimension;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -12,6 +13,7 @@ import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.util.thread.EffectiveSide;
 
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @Mod.EventBusSubscriber
@@ -21,43 +23,121 @@ public class SafeTeleportHandler {
         Player entity = event.getEntity();
         Level level = entity.level();
         new Thread(() -> {
-            if (!isLocationSafe(entity)) {
-                BlockPos safePos = findSafeLocation(level, entity.blockPosition(), 100);
-                if (safePos != null) {
-                    entity.teleportTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
-                }else {
-                    InitialDimension.LOGGER.debug("No safe location found for player " + entity.getName().getString() + " at " + entity.blockPosition());
-                }
-            }
+            teleportToSafeLocation(level, entity, 100);
         }).start();
     }
 
-    // 检测特定位置是否安全
-    private static boolean isLocationSafe(Player player) {
+    @SubscribeEvent
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        Player entity = event.getEntity();
+        Level level = entity.level();
+        new Thread(() -> {
+            teleportToSafeLocation(level, entity, 100);
+        }).start();
+    }
+
+    private static void teleportToSafeLocation(Level level, Player player, int radius) {
+        if (!isLocationSafe(player).isEmpty()) {
+            BlockPos safePos = findSafeLocation(level, player, radius);
+            if (safePos != null) {
+                player.teleportTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
+            } else {
+                randomTeleportTo(level, player);
+                safePos = findSafeLocation(level, player, radius);
+                if (safePos != null) {
+                    player.teleportTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5);
+                } else {
+                    createPlatformAtPlayer(level, player);
+                }
+            }
+        }
+    }
+
+    private static void createPlatformAtPlayer(Level level, Player player) {
+        BlockPos pos = player.blockPosition();
+        for (int x = -1; x <= 1; ++x) {
+            for (int z = -1; z <= 1; ++z) {
+                BlockPos platformPos = pos.offset(x, -1, z);
+                for (int i = 0; i < 1; i++) {
+                    level.setBlockAndUpdate(platformPos.above(i), Blocks.AIR.defaultBlockState());
+                }
+                level.setBlockAndUpdate(platformPos, Blocks.STONE.defaultBlockState());
+            }
+        }
+    }
+
+
+    private static void randomTeleportTo(Level level, Player entity) {
+        Random random = new Random();
+        int x = random.nextInt(250);
+        int z = random.nextInt(250);
+        int y = random.nextInt(level.getHeight());
+        entity.teleportTo(x, y, z);
+    }
+
+
+    private static List<Direction> isLocationSafe(Player player) {
         BlockPos pos = player.blockPosition();
         Level level = player.level();
 
-        return level.noCollision(player)
-                && level.getBlockState(pos.below()).getBlock() != Blocks.AIR
-                && level.getFluidState(pos).isEmpty();
+        List<Direction> directions = new ArrayList<>();
+
+        if (!level.noCollision(player)) {
+            directions.add(Direction.NORTH);
+            directions.add(Direction.SOUTH);
+            directions.add(Direction.WEST);
+            directions.add(Direction.EAST);
+        }
+
+        if (level.getBlockState(pos.below()).getBlock() == Blocks.AIR || level.getBlockState(pos.below()).getBlock() == Blocks.BEDROCK) {
+            directions.add(Direction.DOWN);
+        }
+
+        if (!level.getFluidState(pos).isEmpty()) {
+            directions.add(Direction.UP);
+        }
+
+        return directions;
     }
 
-    // 寻找安全的位置
-    private static BlockPos findSafeLocation(Level level, BlockPos start, int radius) {
-        for (int x = -radius; x <= radius; ++x) {
-            for (int y = -radius; y <= radius; ++y) {
-                for (int z = -radius; z <= radius; ++z) {
-                    BlockPos pos = start.offset(x, y, z);
-                    if (isAreaSafe(level, pos)) {
-                        return pos.relative(Direction.UP);
+    private static BlockPos findSafeLocation(Level level, Player player, int radius) {
+        List<Direction> directions = isLocationSafe(player);
+
+        for (Direction direction : directions) {
+            for (int i = 1; i <= 10; ++i) {
+                BlockPos pos = player.blockPosition().relative(direction, i);
+                if (isAreaSafe(level, pos)) {
+                    return pos.relative(Direction.UP);
+                }
+            }
+        }
+
+        Queue<BlockPos> queue = new ArrayDeque<>();
+        Set<BlockPos> visited = new HashSet<>();
+        queue.offer(player.blockPosition());
+
+        while (!queue.isEmpty()) {
+            BlockPos current = queue.poll();
+
+            if (isAreaSafe(level, current)) {
+                return current.relative(Direction.UP);
+            }
+
+            if (player.blockPosition().distManhattan(current) <= radius) {
+                for (Direction direction : Direction.values()) {
+                    BlockPos neighbor = current.relative(direction);
+                    if (!visited.contains(neighbor)) {
+                        visited.add(neighbor);
+                        queue.offer(neighbor);
                     }
                 }
             }
         }
+
         return null;
     }
 
-    // 检查一个区域是否安全
+
     private static boolean isAreaSafe(Level level, BlockPos pos) {
         if (!level.getBlockState(pos).isAir() && level.getFluidState(pos).isEmpty()) {
             for (int i = 1; i <= 2; ++i) {
