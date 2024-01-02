@@ -27,15 +27,6 @@ public class SafeTeleportHandler {
         }).start();
     }
 
-    @SubscribeEvent
-    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
-        Player entity = event.getEntity();
-        Level level = entity.level;
-        new Thread(() -> {
-            teleportToSafeLocation(level, entity, 100);
-        }).start();
-    }
-
     private static void teleportToSafeLocation(Level level, Player player, int radius) {
         if (!isLocationSafe(player).isEmpty()) {
             BlockPos safePos = findSafeLocation(level, player, radius);
