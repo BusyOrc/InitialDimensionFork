@@ -2,6 +2,7 @@ package com.pancake.initial_dimension;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -25,6 +26,16 @@ public class SafeTeleportHandler {
             teleportToSafeLocation(level, entity, 100);
         }).start();
     }
+
+    @SubscribeEvent
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        Player entity = event.getEntity();
+        Level level = entity.level;
+        new Thread(() -> {
+            teleportToSafeLocation(level, entity, 100);
+        }).start();
+    }
+
     private static void teleportToSafeLocation(Level level, Player player, int radius) {
         if (!isLocationSafe(player).isEmpty()) {
             BlockPos safePos = findSafeLocation(level, player, radius);

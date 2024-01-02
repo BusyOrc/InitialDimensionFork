@@ -15,6 +15,7 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(PlayerList.class)
@@ -43,9 +44,16 @@ public abstract class PlayerListMixin {
 
     @Redirect(method = "respawn", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/server/MinecraftServer;overworld()Lnet/minecraft/server/level/ServerLevel;"), require = 0)
-    private ServerLevel changeRespawnOverworld(MinecraftServer minecraftServer) {
+    private ServerLevel changeOverworld(MinecraftServer minecraftServer) {
         ResourceKey<Level> dimension = InitialDimension.Config.getDimension();
         return minecraftServer.getLevel(dimension);
+    }
+
+
+    @ModifyVariable(method = "respawn", at = @At("STORE"), ordinal = 0)
+    private ServerLevel modifyServerLevel(ServerLevel serverlevel) {
+        ResourceKey<Level> dimension = InitialDimension.Config.getDimension();
+        return server.getLevel(dimension);
     }
 
     @Redirect(method = "getPlayerForLogin", at = @At(value = "INVOKE",
