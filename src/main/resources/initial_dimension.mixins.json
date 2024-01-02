@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.pancake.initial_dimension.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "Initial_dimension.refmap.json",
+  "mixins": [
+    "PlayerListMixin"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
