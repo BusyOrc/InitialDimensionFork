@@ -27,8 +27,6 @@ public abstract class PlayerListMixin {
     @Redirect(method = "placeNewPlayer", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/server/players/PlayerList;load(Lnet/minecraft/server/level/ServerPlayer;)Lnet/minecraft/nbt/CompoundTag;"))
     private CompoundTag modifyLoad(PlayerList instance, ServerPlayer player) {
-        System.out.println("modifyLoad Pos" + player.level().dimension());
-
         ResourceKey<Level> levelResourceKey = InitialDimension.Config.getDimension();
         CompoundTag compoundtag = instance.load(player);
         ResourceKey<Level> resourcekey = compoundtag != null ?
