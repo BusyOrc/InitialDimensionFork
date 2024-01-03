@@ -14,8 +14,6 @@ public class ServerPlayerMixin {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(CallbackInfo ci) {
-        // 修改spawnInvulnerableTime的值
-        System.out.println("spawnInvulnerableTime init");
         this.spawnInvulnerableTime = 120;
     }
 }
