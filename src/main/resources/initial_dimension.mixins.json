@@ -3,7 +3,7 @@
   "minVersion": "0.8",
   "package": "com.pancake.initial_dimension.mixin",
   "compatibilityLevel": "JAVA_8",
-  "refmap": "Initial_dimension.refmap.json",
+  "refmap": "initial_dimension.refmap.json",
   "mixins": [
     "PlayerListMixin",
     "ServerPlayerMixin"
