@@ -20,7 +20,7 @@ public class SafeTeleportHandler {
         Player entity = event.getEntity();
         Level level = entity.level();
         new Thread(() -> {
-            teleportToSafeLocation(level, entity, 100);
+            teleportToSafeLocation(level, entity, 300);
         }).start();
     }
 
@@ -29,7 +29,7 @@ public class SafeTeleportHandler {
         Player entity = event.getEntity();
         Level level = entity.level();
         new Thread(() -> {
-            teleportToSafeLocation(level, entity, 100);
+            teleportToSafeLocation(level, entity, 300);
         }).start();
     }
 
@@ -66,8 +66,8 @@ public class SafeTeleportHandler {
 
     private static void randomTeleportTo(Level level, Player entity) {
         Random random = new Random();
-        int x = random.nextInt(250);
-        int z = random.nextInt(250);
+        int x = random.nextInt(400);
+        int z = random.nextInt(400);
         int y = random.nextInt(level.getHeight());
         entity.teleportTo(x, y, z);
     }
@@ -101,7 +101,7 @@ public class SafeTeleportHandler {
         List<Direction> directions = isLocationSafe(player);
 
         for (Direction direction : directions) {
-            for (int i = 1; i <= 10; ++i) {
+            for (int i = 1; i <= 20; ++i) {
                 BlockPos pos = player.blockPosition().relative(direction, i);
                 if (isAreaSafe(level, pos)) {
                     return pos.relative(Direction.UP);
@@ -136,14 +136,19 @@ public class SafeTeleportHandler {
 
 
     private static boolean isAreaSafe(Level level, BlockPos pos) {
-        if (!level.getBlockState(pos).isAir() && level.getFluidState(pos).isEmpty()) {
-            for (int i = 1; i <= 2; ++i) {
-                if (!level.getBlockState(pos.above(i)).isAir()) {
-                    return false;
-                }
-            }
-            return true;
+        // 玩家脚下必须可站立
+        if (level.getBlockState(pos).isAir() || level.getBlockState(pos).getBlock() == Blocks.BEDROCK) {
+            return false;
         }
-        return false;
+        for (int i = 1; i <= 3; ++i) {
+            if (!level.getBlockState(pos.above(i)).isAir() ||
+                    !level.getFluidState(pos.above(i)).isEmpty() ||
+                    level.getBlockState(pos).getBlock()==Blocks.LAVA||
+                    level.getBlockState(pos).getBlock()==Blocks.NETHERRACK) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
