@@ -15,23 +15,26 @@ import java.util.*;
 
 @Mod.EventBusSubscriber
 public class SafeTeleportHandler {
-    @SubscribeEvent
+
+        @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         Player entity = event.getEntity();
         Level level = entity.level();
         new Thread(() -> {
-            teleportToSafeLocation(level, entity, 300);
+            teleportToSafeLocation(level, entity, 240);
         }).start();
     }
 
-    @SubscribeEvent
+   @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         Player entity = event.getEntity();
         Level level = entity.level();
         new Thread(() -> {
-            teleportToSafeLocation(level, entity, 300);
+            teleportToSafeLocation(level, entity, 240);
         }).start();
     }
+    //这段可能和campfire spawn冲突
+    //但是经过测试，主要是判定safe location的条件需要兼容campfire，这里可以不改，也许可以考虑做成配置文件来判定
 
     private static void teleportToSafeLocation(Level level, Player player, int radius) {
         if (!isLocationSafe(player).isEmpty()) {
@@ -66,8 +69,8 @@ public class SafeTeleportHandler {
 
     private static void randomTeleportTo(Level level, Player entity) {
         Random random = new Random();
-        int x = random.nextInt(400);
-        int z = random.nextInt(400);
+        int x = random.nextInt(250);
+        int z = random.nextInt(250);
         int y = random.nextInt(level.getHeight());
         entity.teleportTo(x, y, z);
     }
@@ -78,6 +81,13 @@ public class SafeTeleportHandler {
         Level level = player.level();
 
         List<Direction> directions = new ArrayList<>();
+        //兼容营火复活模组
+        //这里是主要的兼容问题，增加判定条件以后不会出现复活乱传送的情况，可考虑增加更多兼容
+        if(level.getBlockState(pos.below()).getBlock() == Blocks.CAMPFIRE || level.getBlockState(pos.below()).getBlock()==Blocks.SOUL_CAMPFIRE||
+                level.getBlockState(pos.above(1)).getBlock() == Blocks.CAMPFIRE || level.getBlockState(pos.above(1)).getBlock()==Blocks.SOUL_CAMPFIRE)
+        {
+            return directions;
+        }
 
         if (!level.noCollision(player)) {
             directions.add(Direction.NORTH);
@@ -140,7 +150,7 @@ public class SafeTeleportHandler {
         if (level.getBlockState(pos).isAir() || level.getBlockState(pos).getBlock() == Blocks.BEDROCK) {
             return false;
         }
-        for (int i = 1; i <= 3; ++i) {
+        for (int i = 1; i <= 2; ++i) {
             if (!level.getBlockState(pos.above(i)).isAir() ||
                     !level.getFluidState(pos.above(i)).isEmpty() ||
                     level.getBlockState(pos).getBlock()==Blocks.LAVA||
