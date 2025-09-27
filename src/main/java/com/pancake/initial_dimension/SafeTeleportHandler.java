@@ -18,20 +18,24 @@ public class SafeTeleportHandler {
 
         @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        Player entity = event.getEntity();
-        Level level = entity.level();
-        new Thread(() -> {
-            teleportToSafeLocation(level, entity, 240);
-        }).start();
+            Player entity = event.getEntity();
+            Level level = entity.level();
+            //玩家第一次登录才会触发，第二次则只会留在原地
+                new Thread(() -> {
+                    teleportToSafeLocation(level, entity, 240);
+                }).start();
+
     }
 
    @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         Player entity = event.getEntity();
         Level level = entity.level();
-        new Thread(() -> {
-            teleportToSafeLocation(level, entity, 240);
-        }).start();
+       if(InitialDimension.Config.isRespawnOn()){//配置文件里为true时才会触发
+           new Thread(() -> {
+               teleportToSafeLocation(level, entity, 240);
+           }).start();
+       }
     }
     //这段可能和campfire spawn冲突
     //但是经过测试，主要是判定safe location的条件需要兼容campfire，这里可以不改，也许可以考虑做成配置文件来判定
